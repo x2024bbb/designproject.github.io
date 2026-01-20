@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StFX Parking - Dashboard</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:rgba(255,255,255,0.06);
+      --card-border:rgba(255,255,255,0.12);
+      --text:#e7eefc;
+      --muted:rgba(231,238,252,0.7);
+      --primary:#6ea8ff;
+      --primary-2:#8b5cf6;
+      --shadow:0 20px 60px rgba(0,0,0,0.45);
+      --radius:18px;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(139,92,246,0.25), transparent 60%),
+                  radial-gradient(900px 500px at 80% 20%, rgba(110,168,255,0.22), transparent 55%),
+                  radial-gradient(800px 500px at 50% 90%, rgba(53,211,157,0.15), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .wrap{width:min(820px,100%);}
+    .card{
+      background:var(--card);
+      border:1px solid var(--card-border);
+      border-radius:var(--radius);
+      padding:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+    }
+    h1{margin:0 0 8px; font-size:22px;}
+    .sub{margin:0; color:var(--muted); font-size:13px; line-height:1.4;}
+    .pill{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.05);
+      padding:8px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:rgba(231,238,252,0.85);
+      white-space:nowrap;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 780px){
+      .grid{grid-template-columns:1fr;}
+    }
+    .panel{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+      padding:14px;
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .btn{
+      border:none;
+      cursor:pointer;
+      padding:12px 14px;
+      border-radius:14px;
+      color:#061022;
+      font-weight:800;
+      font-size:14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 16px 40px rgba(110,168,255,0.25);
+      transition: transform 140ms ease, filter 140ms ease;
+      width:100%;
+      text-align:center;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
+    .ghost{
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(255,255,255,0.05);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:700;
+      transition: background 140ms ease, transform 140ms ease;
+      text-decoration:none;
+      display:inline-block;
+      width:100%;
+      text-align:center;
+    }
+    .ghost:hover{background:rgba(255,255,255,0.08); transform:translateY(-1px);}
+    label{font-size:12px; color:var(--muted);}
+    input{
+      width:100%;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:14px;
+      padding:10px 12px;
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+    }
+    input::placeholder{color:rgba(231,238,252,0.45);}
+    .message{
+      margin-top:10px;
+      font-size:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      display:none;
+      border:1px solid transparent;
+    }
+    .message.success{
+      display:block;
+      border-color: rgba(53,211,157,0.35);
+      background: rgba(53,211,157,0.12);
+      color: rgba(201,255,239,0.98);
+    }
+    .message.error{
+      display:block;
+      border-color: rgba(255,90,122,0.35);
+      background: rgba(255,90,122,0.12);
+      color: rgba(255,215,225,0.98);
+    }
+    .note{color:rgba(231,238,252,0.6); font-size:12px; margin-top:8px;}
+    .spot{
+      font-size:14px;
+      margin:8px 0 0;
+      color:rgba(231,238,252,0.9);
+    }
+    .spot strong{color:var(--text);}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div>
+          <h1 id="welcomeTitle">Welcome to StFX Parking!</h1>
+          <p class="sub">Use the options below to view or manage your allocated parking spot.</p>
+          <p class="spot" id="spotLine">Your allocated parking spot is <strong>—</strong>.</p>
+        </div>
+        <div class="pill" id="userPill">Logged in as: —</div>
+      </div>
+
+      <div class="grid">
+        <!-- LEFT: Options -->
+        <div class="panel">
+          <h3 style="margin:0 0 8px; font-size:16px;">Options</h3>
+          <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
+            Choose what you would like to do:
+          </p>
+
+          <div class="row" style="margin-top:12px;">
+            <a class="btn" href="parking-lots.html">1) View Parking Lots</a>
+            <a class="ghost" href="manage-spot.html">2) Manage Parking Spot</a>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <a class="ghost" href="index.html">Return to Login</a>
+            <button class="ghost" id="logoutBtn" type="button">Logout</button>
+          </div>
+
+          <div class="note">
+            Note: This is a demo website (localStorage). We can convert it to Firebase authentication later.
+          </div>
+        </div>
+
+        <!-- RIGHT: Profile / Name -->
+        <div class="panel">
+          <h3 style="margin:0 0 8px; font-size:16px;">Your Profile</h3>
+
+          <div style="display:grid; gap:8px;">
+            <div>
+              <label for="nameInput">Your Name</label>
+              <input id="nameInput" placeholder="e.g., John" />
+            </div>
+
+            <button class="btn" id="saveNameBtn" type="button">Save Name</button>
+            <div class="message" id="msg"></div>
+
+            <div class="note">
+              Your name will appear in the welcome message.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ----------------------------
+    // Demo session + profile storage
+    // ----------------------------
+    // demo_session: { email, remember, ts }
+    // stfx_profile: { name, parkingLot, lotNumber }
+    // ----------------------------
+
+    const userPill = document.getElementById("userPill");
+    const welcomeTitle = document.getElementById("welcomeTitle");
+    const spotLine = document.getElementById("spotLine");
+    const nameInput = document.getElementById("nameInput");
+    const msg = document.getElementById("msg");
+
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem("demo_session")); }
+      catch { return null; }
+    }
+
+    function clearSession() {
+      localStorage.removeItem("demo_session");
+    }
+
+    function getProfile() {
+      try {
+        return JSON.parse(localStorage.getItem("stfx_profile")) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function setProfile(profile) {
+      localStorage.setItem("stfx_profile", JSON.stringify(profile));
+    }
+
+    function showMessage(type, text) {
+      msg.className = "message " + type;
+      msg.textContent = text;
+      msg.style.display = "block";
+    }
+
+    function initDefaults() {
+      const profile = getProfile();
+
+      // Default name
+      if (!profile.name) profile.name = "Your Name";
+
+      // Default parking spot (if not set)
+      if (!profile.parkingLot) profile.parkingLot = "Nasso Family Science Centre";
+      if (!profile.lotNumber) profile.lotNumber = "Lot 12";
+
+      setProfile(profile);
+    }
+
+    // Protect page if not logged in
+    const session = getSession();
+    if (!session || !session.email) {
+      window.location.href = "index.html";
+    }
+
+    initDefaults();
+
+    const profile = getProfile();
+    userPill.textContent = "Logged in as: " + session.email;
+    nameInput.value = profile.name || "";
+
+    welcomeTitle.textContent = `Welcome ${profile.name} to StFX Parking!`;
+    spotLine.innerHTML = `Your allocated parking spot is <strong>${profile.parkingLot}, ${profile.lotNumber}</strong>.`;
+
+    document.getElementById("saveNameBtn").addEventListener("click", () => {
+      const updatedName = nameInput.value.trim();
+      if (!updatedName) {
+        showMessage("error", "Please enter a name before saving.");
+        return;
+      }
+      const p = getProfile();
+      p.name = updatedName;
+      setProfile(p);
+
+      welcomeTitle.textContent = `Welcome ${p.name} to StFX Parking!`;
+      showMessage("success", "Name updated successfully.");
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", () => {
+      clearSession();
+      window.location.href = "index.html";
+    });
+  </script>
+</body>
+</html>

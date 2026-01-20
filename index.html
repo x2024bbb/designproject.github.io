@@ -3,430 +3,258 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login Portal</title>
-
+  <title>StFX Parking - Manage Spot</title>
   <style>
     :root{
-      --bg: #0b1220;
-      --card: rgba(255,255,255,0.06);
-      --card-border: rgba(255,255,255,0.12);
-      --text: #e7eefc;
-      --muted: rgba(231,238,252,0.7);
-      --primary: #6ea8ff;
-      --primary-2: #8b5cf6;
-      --danger: #ff5a7a;
-      --success: #35d39d;
-      --shadow: 0 20px 60px rgba(0,0,0,0.45);
-      --radius: 18px;
+      --bg:#0b1220;
+      --card:rgba(255,255,255,0.06);
+      --card-border:rgba(255,255,255,0.12);
+      --text:#e7eefc;
+      --muted:rgba(231,238,252,0.7);
+      --primary:#6ea8ff;
+      --primary-2:#8b5cf6;
+      --danger:#ff5a7a;
+      --success:#35d39d;
+      --shadow:0 20px 60px rgba(0,0,0,0.45);
+      --radius:18px;
     }
-
-    *{ box-sizing: border-box; }
+    *{box-sizing:border-box;}
     body{
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
       background: radial-gradient(1200px 600px at 20% 10%, rgba(139,92,246,0.25), transparent 60%),
                   radial-gradient(900px 500px at 80% 20%, rgba(110,168,255,0.22), transparent 55%),
                   radial-gradient(800px 500px at 50% 90%, rgba(53,211,157,0.15), transparent 60%),
                   var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 24px;
+      color:var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
     }
-
-    .wrap{ width: min(460px, 100%); }
-    .brand{
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 14px;
-      user-select: none;
-    }
-    .logo{
-      width: 44px;
-      height: 44px;
-      border-radius: 14px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      box-shadow: 0 12px 35px rgba(110,168,255,0.35);
-      display: grid;
-      place-items: center;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-    .brand h1{
-      font-size: 18px;
-      margin: 0;
-      line-height: 1.1;
-    }
-    .brand p{
-      margin: 2px 0 0;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
+    .wrap{width:min(860px,100%);}
     .card{
-      background: var(--card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 22px;
-      box-shadow: var(--shadow);
+      background:var(--card);
+      border:1px solid var(--card-border);
+      border-radius:var(--radius);
+      padding:22px;
+      box-shadow:var(--shadow);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
     }
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    h1{margin:0 0 6px; font-size:20px;}
+    .sub{margin:0; color:var(--muted); font-size:13px; line-height:1.4;}
+    .nav{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .ghost{
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(255,255,255,0.05);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:700;
+      transition: background 140ms ease, transform 140ms ease;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .ghost:hover{background:rgba(255,255,255,0.08); transform:translateY(-1px);}
 
-    .top-row{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    @media (max-width: 760px){ .grid{grid-template-columns:1fr;} }
+
+    .panel{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+      padding:14px;
     }
 
-    .pill{
-      display: inline-flex;
-      gap: 6px;
-      padding: 6px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.05);
+    .spot-line{
+      margin:8px 0 0;
+      color:rgba(231,238,252,0.9);
+      font-size:14px;
     }
+    .spot-line strong{color:var(--text);}
 
-    .pill button{
-      border: none;
-      cursor: pointer;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: transparent;
-      color: rgba(231,238,252,0.75);
-      font-weight: 700;
-      font-size: 12px;
-      transition: background 140ms ease, color 140ms ease;
+    label{font-size:12px; color:var(--muted);}
+    select, input{
+      width:100%;
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:14px;
+      padding:10px 12px;
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+      margin-top:6px;
     }
-
-    .pill button.active{
-      background: rgba(255,255,255,0.10);
-      color: var(--text);
-    }
-
-    h2{ margin: 0 0 6px; font-size: 20px; }
-    .subtitle{
-      margin: 0 0 16px;
-      color: var(--muted);
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    form{ display: grid; gap: 12px; }
-    .field{ display: grid; gap: 6px; }
-    label{ font-size: 12px; color: var(--muted); }
-
-    .input{
-      display: flex;
-      align-items: center;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      padding: 10px 12px;
-      transition: border 150ms ease, transform 150ms ease;
-    }
-    .input:focus-within{
-      border-color: rgba(110,168,255,0.55);
-      transform: translateY(-1px);
-    }
-
-    input{
-      width: 100%;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text);
-      font-size: 14px;
-    }
-    input::placeholder{ color: rgba(231,238,252,0.45); }
-
-    .icon-btn{
-      border: none;
-      background: transparent;
-      color: rgba(231,238,252,0.75);
-      cursor: pointer;
-      padding: 6px;
-      border-radius: 10px;
-      transition: background 120ms ease;
-      line-height: 0;
-    }
-    .icon-btn:hover{ background: rgba(255,255,255,0.07); }
-
-    .row{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      margin-top: 4px;
-    }
-
-    .check{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: var(--muted);
-      font-size: 12px;
-      user-select: none;
-    }
-    .check input{ width: 14px; height: 14px; accent-color: var(--primary); }
-
-    .link{
-      color: rgba(110,168,255,0.9);
-      text-decoration: none;
-      font-size: 12px;
-    }
-    .link:hover{ text-decoration: underline; }
 
     .btn{
-      margin-top: 6px;
-      width: 100%;
-      border: none;
-      cursor: pointer;
-      padding: 12px 14px;
-      border-radius: 14px;
-      color: #061022;
-      font-weight: 800;
-      font-size: 14px;
+      margin-top:10px;
+      width:100%;
+      border:none;
+      cursor:pointer;
+      padding:12px 14px;
+      border-radius:14px;
+      color:#061022;
+      font-weight:800;
+      font-size:14px;
       background: linear-gradient(135deg, var(--primary), var(--primary-2));
       box-shadow: 0 16px 40px rgba(110,168,255,0.25);
       transition: transform 140ms ease, filter 140ms ease;
     }
-    .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
-    .btn:active{ transform: translateY(0px); filter: brightness(0.98); }
+    .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
+
+    .danger{
+      background: rgba(255,90,122,0.14);
+      border: 1px solid rgba(255,90,122,0.35);
+      color: rgba(255,215,225,0.98);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:800;
+      width:100%;
+      margin-top:10px;
+    }
 
     .message{
-      margin-top: 12px;
-      font-size: 12px;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid transparent;
-      display: none;
-    }
-    .message.error{
-      display: block;
-      border-color: rgba(255,90,122,0.35);
-      background: rgba(255,90,122,0.12);
-      color: rgba(255,215,225,0.98);
+      margin-top:10px;
+      font-size:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      display:none;
+      border:1px solid transparent;
     }
     .message.success{
-      display: block;
+      display:block;
       border-color: rgba(53,211,157,0.35);
       background: rgba(53,211,157,0.12);
       color: rgba(201,255,239,0.98);
     }
-
-    .footer{
-      margin-top: 14px;
-      text-align: center;
-      color: rgba(231,238,252,0.55);
-      font-size: 12px;
+    .message.error{
+      display:block;
+      border-color: rgba(255,90,122,0.35);
+      background: rgba(255,90,122,0.12);
+      color: rgba(255,215,225,0.98);
     }
-
-    /* Dashboard */
-    .dash{
-      display: none;
-    }
-    .dash-header{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 10px;
-    }
-    .badge{
-      font-size: 12px;
-      color: rgba(231,238,252,0.85);
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.05);
-      padding: 8px 10px;
-      border-radius: 999px;
-    }
-
-    .logout{
-      border: 1px solid rgba(255,255,255,0.18);
-      background: rgba(255,255,255,0.05);
-      color: var(--text);
-      border-radius: 14px;
-      padding: 10px 12px;
-      cursor: pointer;
-      font-weight: 700;
-      transition: background 140ms ease, transform 140ms ease;
-    }
-    .logout:hover{
-      background: rgba(255,255,255,0.08);
-      transform: translateY(-1px);
-    }
-
-    .panel{
-      margin-top: 12px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.04);
-      padding: 14px;
-      color: rgba(231,238,252,0.85);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .small-note{
-      margin-top: 10px;
-      font-size: 12px;
-      color: rgba(231,238,252,0.55);
+    .note{
+      margin-top:10px;
+      color:rgba(231,238,252,0.55);
+      font-size:12px;
+      line-height:1.4;
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="brand">
-      <div class="logo">UI</div>
-      <div>
-        <h1>Your Website</h1>
-        <p>Login portal (Demo Mode)</p>
-      </div>
-    </div>
-
-    <!-- AUTH CARD -->
-    <div class="card" id="authCard">
-      <div class="top-row">
+    <div class="card">
+      <div class="top">
         <div>
-          <h2 id="title">Welcome back</h2>
-          <p class="subtitle" id="subtitle">Login to continue to your dashboard.</p>
+          <h1>Manage Parking Spot</h1>
+          <p class="sub">Remove your current spot and choose a new one from available options.</p>
+          <p class="spot-line" id="currentSpotLine">Current spot: <strong>—</strong></p>
         </div>
-
-        <div class="pill" aria-label="Switch between Login and Signup">
-          <button id="tabLogin" class="active" type="button">Login</button>
-          <button id="tabSignup" type="button">Signup</button>
+        <div class="nav">
+          <a class="ghost" href="dashboard.html">Back to Dashboard</a>
+          <a class="ghost" href="parking-lots.html">View Lots</a>
         </div>
       </div>
 
-      <form id="authForm" novalidate>
-        <div class="field">
-          <label for="email">Email</label>
-          <div class="input">
-            <input id="email" name="email" type="email" placeholder="you@example.com" required />
+      <div class="grid">
+        <!-- Remove -->
+        <div class="panel">
+          <h3 style="margin:0 0 6px; font-size:16px;">Remove Current Spot</h3>
+          <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
+            This will clear your allocated parking spot.
+          </p>
+
+          <button class="danger" id="removeBtn" type="button">Remove My Parking Spot</button>
+
+          <div class="note">
+            After removal, you can immediately select a new spot on the right.
           </div>
         </div>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <div class="input">
-            <input id="password" name="password" type="password" placeholder="Enter a password" required minlength="6" />
-            <button type="button" class="icon-btn" id="togglePassword" aria-label="Show password">👁</button>
+        <!-- Select new -->
+        <div class="panel">
+          <h3 style="margin:0 0 6px; font-size:16px;">Select a New Spot</h3>
+          <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
+            Choose a parking lot area and a lot number.
+          </p>
+
+          <div style="margin-top:10px;">
+            <label for="lotSelect">Parking Lot</label>
+            <select id="lotSelect">
+              <option>Nasso Family Science Centre</option>
+              <option>Mulroney</option>
+              <option>Bloomfield</option>
+              <option>Bruce Brown</option>
+              <option>Keating Centre</option>
+            </select>
           </div>
-        </div>
 
-        <div class="row">
-          <label class="check">
-            <input type="checkbox" id="rememberMe" />
-            Remember me
-          </label>
-          <a href="#" class="link" id="forgotLink">Forgot password?</a>
-        </div>
+          <div style="margin-top:10px;">
+            <label for="numberInput">Lot Number</label>
+            <input id="numberInput" placeholder="e.g., Lot 22" />
+          </div>
 
-        <button class="btn" type="submit" id="submitBtn">Sign in</button>
+          <button class="btn" id="saveSpotBtn" type="button">Save New Spot</button>
 
-        <div id="msg" class="message"></div>
+          <div class="message" id="msg"></div>
 
-        <div class="footer">
-          <span id="footerText">Don’t have an account?</span>
-          <a class="link" href="#" id="footerAction">Create one</a>
-        </div>
-      </form>
-    </div>
-
-    <!-- DASHBOARD CARD -->
-    <div class="card dash" id="dashCard">
-      <div class="dash-header">
-        <div>
-          <h2>Dashboard</h2>
-          <p class="subtitle" style="margin-bottom:0;">You’re logged in.</p>
-        </div>
-        <button class="logout" id="logoutBtn" type="button">Logout</button>
-      </div>
-
-      <div class="badge" id="userBadge">Logged in as: —</div>
-
-      <div class="panel">
-        <strong>Next steps you can add:</strong>
-        <ul>
-          <li>Real authentication (Firebase / Node.js)</li>
-          <li>Profile page</li>
-          <li>Protected pages (only for logged-in users)</li>
-          <li>Database for saving user info</li>
-        </ul>
-
-        <div class="small-note">
-          This demo uses your browser storage (localStorage). It is not secure for real accounts.
+          <div class="note">
+            Note: This is demo logic. Later, we can restrict available numbers and show true availability.
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // -----------------------------
-    // Simple Demo Auth (localStorage)
-    // -----------------------------
-    // Stores user accounts in: localStorage["demo_users"] = { "email": "password", ... }
-    // Logged-in session: localStorage["demo_session"] = { email, remember }
-    // -----------------------------
+    // Protect page if not logged in
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem("demo_session")); }
+      catch { return null; }
+    }
+    const session = getSession();
+    if (!session || !session.email) {
+      window.location.href = "index.html";
+    }
 
-    const authCard = document.getElementById("authCard");
-    const dashCard = document.getElementById("dashCard");
-    const userBadge = document.getElementById("userBadge");
-
-    const form = document.getElementById("authForm");
-    const msg = document.getElementById("msg");
-
-    const tabLogin = document.getElementById("tabLogin");
-    const tabSignup = document.getElementById("tabSignup");
-
-    const title = document.getElementById("title");
-    const subtitle = document.getElementById("subtitle");
-    const submitBtn = document.getElementById("submitBtn");
-    const footerText = document.getElementById("footerText");
-    const footerAction = document.getElementById("footerAction");
-    const forgotLink = document.getElementById("forgotLink");
-
-    const toggle = document.getElementById("togglePassword");
-    const password = document.getElementById("password");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    let mode = "login"; // "login" | "signup"
-
-    function getUsers() {
+    function getProfile() {
       try {
-        return JSON.parse(localStorage.getItem("demo_users")) || {};
+        return JSON.parse(localStorage.getItem("stfx_profile")) || {};
       } catch {
         return {};
       }
     }
 
-    function setUsers(users) {
-      localStorage.setItem("demo_users", JSON.stringify(users));
+    function setProfile(profile) {
+      localStorage.setItem("stfx_profile", JSON.stringify(profile));
     }
 
-    function setSession(email, remember) {
-      const session = { email, remember: !!remember, ts: Date.now() };
-      localStorage.setItem("demo_session", JSON.stringify(session));
-    }
-
-    function getSession() {
-      try {
-        return JSON.parse(localStorage.getItem("demo_session"));
-      } catch {
-        return null;
-      }
-    }
-
-    function clearSession() {
-      localStorage.removeItem("demo_session");
-    }
+    const currentSpotLine = document.getElementById("currentSpotLine");
+    const lotSelect = document.getElementById("lotSelect");
+    const numberInput = document.getElementById("numberInput");
+    const msg = document.getElementById("msg");
 
     function showMessage(type, text) {
       msg.className = "message " + type;
@@ -434,141 +262,43 @@
       msg.style.display = "block";
     }
 
-    function hideMessage() {
-      msg.style.display = "none";
-      msg.textContent = "";
-      msg.className = "message";
-    }
-
-    function setMode(nextMode) {
-      mode = nextMode;
-      hideMessage();
-
-      if (mode === "login") {
-        tabLogin.classList.add("active");
-        tabSignup.classList.remove("active");
-        title.textContent = "Welcome back";
-        subtitle.textContent = "Login to continue to your dashboard.";
-        submitBtn.textContent = "Sign in";
-        footerText.textContent = "Don’t have an account?";
-        footerAction.textContent = "Create one";
-        forgotLink.style.display = "inline";
+    function refreshCurrentSpot() {
+      const p = getProfile();
+      if (p.parkingLot && p.lotNumber) {
+        currentSpotLine.innerHTML = `Current spot: <strong>${p.parkingLot}, ${p.lotNumber}</strong>`;
       } else {
-        tabSignup.classList.add("active");
-        tabLogin.classList.remove("active");
-        title.textContent = "Create an account";
-        subtitle.textContent = "Signup to get started.";
-        submitBtn.textContent = "Create account";
-        footerText.textContent = "Already have an account?";
-        footerAction.textContent = "Sign in";
-        forgotLink.style.display = "none";
+        currentSpotLine.innerHTML = `Current spot: <strong>Not allocated</strong>`;
       }
     }
 
-    function isValidEmail(email) {
-      return typeof email === "string" && email.includes("@") && email.includes(".");
-    }
+    refreshCurrentSpot();
 
-    function goToDashboard(email) {
-      authCard.style.display = "none";
-      dashCard.style.display = "block";
-      userBadge.textContent = "Logged in as: " + email;
-    }
-
-    function goToAuth() {
-      dashCard.style.display = "none";
-      authCard.style.display = "block";
-    }
-
-    // Show/hide password
-    toggle.addEventListener("click", () => {
-      const isHidden = password.type === "password";
-      password.type = isHidden ? "text" : "password";
-      toggle.textContent = isHidden ? "🙈" : "👁";
-      toggle.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    document.getElementById("removeBtn").addEventListener("click", () => {
+      const p = getProfile();
+      delete p.parkingLot;
+      delete p.lotNumber;
+      setProfile(p);
+      showMessage("success", "Parking spot removed.");
+      refreshCurrentSpot();
     });
 
-    // Mode switching
-    tabLogin.addEventListener("click", () => setMode("login"));
-    tabSignup.addEventListener("click", () => setMode("signup"));
-    footerAction.addEventListener("click", (e) => {
-      e.preventDefault();
-      setMode(mode === "login" ? "signup" : "login");
-    });
+    document.getElementById("saveSpotBtn").addEventListener("click", () => {
+      const chosenLot = lotSelect.value;
+      const lotNumber = numberInput.value.trim();
 
-    // Fake "forgot password" handling
-    forgotLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      showMessage("error", "Demo Mode: password reset is not enabled yet.");
-    });
-
-    // Submit handler
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      hideMessage();
-
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const pass = document.getElementById("password").value.trim();
-      const remember = document.getElementById("rememberMe").checked;
-
-      if (!isValidEmail(email)) {
-        showMessage("error", "Please enter a valid email address.");
-        return;
-      }
-      if (pass.length < 6) {
-        showMessage("error", "Password must be at least 6 characters.");
+      if (!lotNumber) {
+        showMessage("error", "Please enter a lot number (e.g., Lot 22).");
         return;
       }
 
-      const users = getUsers();
+      const p = getProfile();
+      p.parkingLot = chosenLot;
+      p.lotNumber = lotNumber;
+      setProfile(p);
 
-      if (mode === "signup") {
-        if (users[email]) {
-          showMessage("error", "This email is already registered. Try logging in.");
-          setMode("login");
-          return;
-        }
-        users[email] = pass;
-        setUsers(users);
-        setSession(email, remember);
-        showMessage("success", "Account created! Redirecting...");
-        setTimeout(() => goToDashboard(email), 700);
-        return;
-      }
-
-      // login mode
-      if (!users[email]) {
-        showMessage("error", "No account found. Please sign up first.");
-        setMode("signup");
-        return;
-      }
-      if (users[email] !== pass) {
-        showMessage("error", "Incorrect password. Try again.");
-        return;
-      }
-
-      setSession(email, remember);
-      showMessage("success", "Login successful! Redirecting...");
-      setTimeout(() => goToDashboard(email), 700);
+      showMessage("success", "New parking spot saved successfully.");
+      refreshCurrentSpot();
     });
-
-    // Logout
-    logoutBtn.addEventListener("click", () => {
-      clearSession();
-      goToAuth();
-      setMode("login");
-      showMessage("success", "You have been logged out.");
-    });
-
-    // Auto-login if session exists
-    const session = getSession();
-    if (session && session.email) {
-      goToDashboard(session.email);
-    } else {
-      setMode("login");
-      goToAuth();
-    }
   </script>
 </body>
 </html>
-

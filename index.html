@@ -257,6 +257,9 @@
 
     const ACCESS_CODE = "ABCD-1234-EFGH-5678";
 
+    // Cleanup any older versions stored in your browser
+    migrateLegacyData();
+
     function migrateLegacyData(){
       // Clear previous demo keys (older version)
       localStorage.removeItem("demo_session");

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StFX Parking - View Lots</title>
+  <title>StFX Parking - Parking Lots</title>
   <style>
     :root{
       --bg:#0b1220;
@@ -15,9 +15,14 @@
       --primary-2:#8b5cf6;
       --shadow:0 20px 60px rgba(0,0,0,0.45);
       --radius:18px;
-      --open:#35d39d;
-      --closed:#ff5a7a;
+
+      --available: rgba(255,255,255,0.10);
+      --taken: rgba(255,90,122,0.25);
+      --yours: rgba(53,211,157,0.25);
+      --selected: rgba(110,168,255,0.28);
+      --border: rgba(255,255,255,0.14);
     }
+
     *{box-sizing:border-box;}
     body{
       margin:0;
@@ -32,7 +37,7 @@
       place-items:center;
       padding:24px;
     }
-    .wrap{width:min(920px,100%);}
+    .wrap{width:min(980px,100%);}
     .card{
       background:var(--card);
       border:1px solid var(--card-border);
@@ -72,7 +77,14 @@
     .ghost:hover{background:rgba(255,255,255,0.08); transform:translateY(-1px);}
 
     .controls{
-      margin-top:10px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+      margin-top:8px;
+    }
+    .left-controls{
       display:flex;
       gap:12px;
       flex-wrap:wrap;
@@ -86,45 +98,186 @@
       color:var(--text);
       outline:none;
       font-size:14px;
-      min-width:260px;
+      min-width:280px;
     }
-    .grid{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap:12px;
-    }
-    @media (max-width: 860px){ .grid{grid-template-columns: 1fr 1fr;} }
-    @media (max-width: 560px){ .grid{grid-template-columns: 1fr;} }
 
-    .lot{
-      border-radius:16px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.04);
-      padding:14px;
+    .legend{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      color:rgba(231,238,252,0.70);
+      font-size:12px;
     }
-    .lot h3{margin:0; font-size:14px;}
-    .lot p{margin:6px 0 0; color:rgba(231,238,252,0.7); font-size:12px; line-height:1.35;}
-    .status{
-      margin-top:10px;
+    .chip{
       display:inline-flex;
       align-items:center;
       gap:8px;
       padding:7px 10px;
       border-radius:999px;
-      font-size:12px;
-      border:1px solid rgba(255,255,255,0.12);
+      border:1px solid var(--border);
       background:rgba(255,255,255,0.04);
     }
-    .dot{
-      width:10px; height:10px; border-radius:50%;
-      background:var(--open);
+    .swatch{
+      width:12px; height:12px; border-radius:4px;
+      background:var(--available);
+      border:1px solid rgba(255,255,255,0.14);
     }
-    .closed .dot{ background: var(--closed); }
-    .note{
-      margin-top:12px;
-      color:rgba(231,238,252,0.55);
+    .swatch.taken{background:var(--taken);}
+    .swatch.yours{background:var(--yours);}
+    .swatch.selected{background:var(--selected);}
+
+    .screen{
+      margin:16px 0 10px;
+      width:100%;
+      height:10px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(110,168,255,0.0), rgba(110,168,255,0.5), rgba(110,168,255,0.0));
+      border:1px solid rgba(255,255,255,0.08);
+    }
+
+    .lot-area{
+      margin-top:10px;
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+      padding:14px;
+    }
+
+    .rows{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      align-items:center;
+      padding:10px 0;
+    }
+
+    .row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+
+    .row-label{
+      width:22px;
+      text-align:right;
       font-size:12px;
+      color:rgba(231,238,252,0.55);
+      margin-right:6px;
+      user-select:none;
+    }
+
+    .spots{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .block{
+      display:flex;
+      gap:8px;
+      align-items:center;
+    }
+
+    .aisle{
+      width:22px;
+    }
+
+    .spot{
+      width:34px;
+      height:34px;
+      border-radius:10px;
+      background:var(--available);
+      border:1px solid rgba(255,255,255,0.14);
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      font-size:11px;
+      color:rgba(231,238,252,0.85);
+      user-select:none;
+      transition: transform 120ms ease, filter 120ms ease, background 120ms ease;
+    }
+
+    .spot:hover{ transform: translateY(-1px); filter: brightness(1.08); }
+    .spot.taken{
+      background:var(--taken);
+      cursor:not-allowed;
+      opacity:0.9;
+    }
+    .spot.yours{
+      background:var(--yours);
+      border-color: rgba(53,211,157,0.55);
+    }
+    .spot.selected{
+      background:var(--selected);
+      border-color: rgba(110,168,255,0.70);
+      transform: translateY(-1px);
+    }
+
+    .section-gap{
+      height:8px;
+    }
+
+    .footer-bar{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:12px;
+    }
+
+    .selection{
+      color:rgba(231,238,252,0.85);
+      font-size:13px;
+    }
+
+    .btn{
+      border:none;
+      cursor:pointer;
+      padding:12px 14px;
+      border-radius:14px;
+      color:#061022;
+      font-weight:800;
+      font-size:14px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 16px 40px rgba(110,168,255,0.25);
+      transition: transform 140ms ease, filter 140ms ease;
+      min-width:220px;
+    }
+    .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
+    .btn:disabled{
+      opacity:0.55;
+      cursor:not-allowed;
+      filter:none;
+      transform:none;
+    }
+
+    .message{
+      margin-top:10px;
+      font-size:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid transparent;
+      display:none;
+    }
+    .message.success{
+      display:block;
+      border-color: rgba(53,211,157,0.35);
+      background: rgba(53,211,157,0.12);
+      color: rgba(201,255,239,0.98);
+    }
+    .message.error{
+      display:block;
+      border-color: rgba(255,90,122,0.35);
+      background: rgba(255,90,122,0.12);
+      color: rgba(255,215,225,0.98);
+    }
+
+    @media (max-width: 520px){
+      .spot{ width:30px; height:30px; border-radius:9px; font-size:10px;}
+      select{ min-width: 100%; }
+      .btn{ width:100%; min-width: 0;}
     }
   </style>
 </head>
@@ -134,10 +287,8 @@
     <div class="card">
       <div class="top">
         <div>
-          <h1>View Parking Lots</h1>
-          <p class="sub">
-            View-only mode: you can switch between areas and see which parking lots are open/closed.
-          </p>
+          <h1>Choose Your Parking Spot</h1>
+          <p class="sub">Movie-theatre style selection. Click a spot, then confirm to save it as yours.</p>
         </div>
         <div class="nav">
           <a class="ghost" href="dashboard.html">Back to Dashboard</a>
@@ -146,70 +297,339 @@
       </div>
 
       <div class="controls">
-        <label style="color:rgba(231,238,252,0.7); font-size:13px;">Select Area:</label>
-        <select id="areaSelect">
-          <option value="All">All Areas</option>
-          <option value="Academic Buildings">Academic Buildings</option>
-          <option value="Student Services">Student Services</option>
-          <option value="Athletics">Athletics</option>
-        </select>
+        <div class="left-controls">
+          <label style="color:rgba(231,238,252,0.70); font-size:13px;">Parking Lot:</label>
+          <select id="lotSelect">
+            <option>Nasso Family Science Centre</option>
+            <option>Mulroney</option>
+            <option>Bloomfield</option>
+            <option>Bruce Brown</option>
+            <option>Keating Centre</option>
+          </select>
+        </div>
+
+        <div class="legend">
+          <span class="chip"><span class="swatch"></span> Available</span>
+          <span class="chip"><span class="swatch selected"></span> Selected</span>
+          <span class="chip"><span class="swatch yours"></span> Yours</span>
+          <span class="chip"><span class="swatch taken"></span> Taken</span>
+        </div>
       </div>
 
-      <div class="grid" id="lotsGrid"></div>
+      <div class="screen" aria-hidden="true"></div>
 
-      <div class="note">
-        Note: Status is demo data. This page does not allow booking or changes.
+      <div class="lot-area">
+        <div class="rows" id="rows"></div>
+
+        <div class="footer-bar">
+          <div class="selection" id="selectionText">Selected spot: <strong>None</strong></div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn" id="confirmBtn" disabled>Confirm Spot</button>
+          </div>
+        </div>
+
+        <div id="msg" class="message"></div>
       </div>
     </div>
   </div>
 
   <script>
-    // Protect page if not logged in
-    function getSession() {
+    // ----------------------------
+    // Auth + Profile + Ownership
+    // ----------------------------
+    // demo_session: { email, remember, ts }
+    // stfx_profile: { name, parkingLot, lotNumber }
+    // stfx_spot_owners: { [lotName]: { [spotId]: ownerEmailOrSystem } }
+    // ----------------------------
+
+    function getSession(){
       try { return JSON.parse(localStorage.getItem("demo_session")); }
       catch { return null; }
     }
+
     const session = getSession();
-    if (!session || !session.email) {
+    if(!session || !session.email){
       window.location.href = "index.html";
     }
 
-    const lots = [
-      { name: "Nasso Family Science Centre", area: "Academic Buildings", status: "Open", info: "Near science labs and classrooms." },
-      { name: "Mulroney", area: "Academic Buildings", status: "Open", info: "Central campus access." },
-      { name: "Bloomfield", area: "Student Services", status: "Closed", info: "High demand area. Temporarily closed." },
-      { name: "Bruce Brown", area: "Athletics", status: "Open", info: "Convenient for recreation and sports facilities." },
-      { name: "Keating Centre", area: "Athletics", status: "Closed", info: "Maintenance in progress (demo status)." }
-    ];
+    function getProfile(){
+      try { return JSON.parse(localStorage.getItem("stfx_profile")) || {}; }
+      catch { return {}; }
+    }
 
-    const grid = document.getElementById("lotsGrid");
-    const areaSelect = document.getElementById("areaSelect");
+    function setProfile(profile){
+      localStorage.setItem("stfx_profile", JSON.stringify(profile));
+    }
 
-    function render(selectedArea) {
-      grid.innerHTML = "";
+    function getOwners(){
+      try { return JSON.parse(localStorage.getItem("stfx_spot_owners")) || {}; }
+      catch { return {}; }
+    }
 
-      const filtered = selectedArea === "All"
-        ? lots
-        : lots.filter(l => l.area === selectedArea);
+    function setOwners(owners){
+      localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
+    }
 
-      filtered.forEach(lot => {
-        const div = document.createElement("div");
-        div.className = "lot" + (lot.status === "Closed" ? " closed" : "");
-        div.innerHTML = `
-          <h3>${lot.name}</h3>
-          <p>Area: ${lot.area}</p>
-          <p>${lot.info}</p>
-          <div class="status">
-            <span class="dot"></span>
-            <span>${lot.status}</span>
-          </div>
-        `;
-        grid.appendChild(div);
+    // Deterministic seed so "taken spots" look real in demo
+    function seededRandom(seed){
+      let s = 0;
+      for(let i=0;i<seed.length;i++) s = (s + seed.charCodeAt(i) * (i+1)) % 2147483647;
+      return function(){
+        s = (s * 48271) % 2147483647;
+        return s / 2147483647;
+      }
+    }
+
+    const lotLayouts = {
+      "Nasso Family Science Centre": { type: "simple8" },
+      "Mulroney": { type: "simple8" },
+      "Keating Centre": { type: "simple8" },
+      "Bloomfield": { type: "double16" },
+      "Bruce Brown": { type: "double16" }
+    };
+
+    // Build layout rows:
+    // simple8 => 4 rows of 8: 1 row, 2 rows, 1 row
+    // double16 => top row of 8, then 8 rows of 16 (8+aisle+8), then bottom row of 8
+    function buildRows(lotName){
+      const layout = lotLayouts[lotName] || { type: "simple8" };
+      const rows = [];
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+      if(layout.type === "simple8"){
+        // A (top), B C (middle), D (bottom)
+        rows.push({ label: "A", size: 8, split: false, section: "top" });
+        rows.push({ label: "B", size: 8, split: false, section: "middle" });
+        rows.push({ label: "C", size: 8, split: false, section: "middle" });
+        rows.push({ label: "D", size: 8, split: false, section: "bottom" });
+      } else {
+        // A top (8)
+        rows.push({ label: "A", size: 8, split: false, section: "top" });
+        // B-I (8 rows) each 16 with aisle after 8
+        for(let i=1;i<=8;i++){
+          rows.push({ label: letters[i], size: 16, split: true, section: "middle" });
+        }
+        // J bottom (8)
+        rows.push({ label: "J", size: 8, split: false, section: "bottom" });
+      }
+
+      return rows;
+    }
+
+    // Seed default taken spots for a lot (owner = "system")
+    function seedTakenSpotsIfNeeded(lotName){
+      const owners = getOwners();
+      if(!owners[lotName]) owners[lotName] = {};
+
+      // If already seeded, do nothing
+      const existingKeys = Object.keys(owners[lotName]);
+      if(existingKeys.length > 0) return;
+
+      const rows = buildRows(lotName);
+      const rand = seededRandom("seed_" + lotName);
+
+      // Target % taken (Bloomfield/Bruce Brown busier)
+      const takeRate = (lotLayouts[lotName].type === "double16") ? 0.22 : 0.18;
+
+      rows.forEach(r => {
+        for(let i=1;i<=r.size;i++){
+          const spotId = r.label + String(i);
+          if(rand() < takeRate){
+            owners[lotName][spotId] = "system";
+          }
+        }
+      });
+
+      setOwners(owners);
+    }
+
+    const lotSelect = document.getElementById("lotSelect");
+    const rowsEl = document.getElementById("rows");
+    const selectionText = document.getElementById("selectionText");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const msg = document.getElementById("msg");
+
+    let selectedSpotId = null;
+
+    function showMessage(type, text){
+      msg.className = "message " + type;
+      msg.textContent = text;
+      msg.style.display = "block";
+    }
+    function hideMessage(){
+      msg.style.display = "none";
+      msg.textContent = "";
+      msg.className = "message";
+    }
+
+    function spotOwner(lotName, spotId){
+      const owners = getOwners();
+      return owners?.[lotName]?.[spotId] || null;
+    }
+
+    function isTakenByOther(lotName, spotId){
+      const owner = spotOwner(lotName, spotId);
+      if(!owner) return false;
+      return owner !== session.email;
+    }
+
+    function isYours(lotName, spotId){
+      return spotOwner(lotName, spotId) === session.email;
+    }
+
+    function renderLot(){
+      hideMessage();
+      const lotName = lotSelect.value;
+
+      seedTakenSpotsIfNeeded(lotName);
+      const rows = buildRows(lotName);
+
+      rowsEl.innerHTML = "";
+      selectedSpotId = null;
+      confirmBtn.disabled = true;
+      selectionText.innerHTML = 'Selected spot: <strong>None</strong>';
+
+      // current profile spot (if matches this lot)
+      const profile = getProfile();
+      const currentLot = profile.parkingLot;
+      const currentSpot = profile.lotNumber; // we store spot like "B12"
+
+      let prevSection = null;
+
+      rows.forEach(r => {
+        // insert section gap between top/middle/bottom for the simple layout
+        if(prevSection && prevSection !== r.section){
+          const gap = document.createElement("div");
+          gap.className = "section-gap";
+          rowsEl.appendChild(gap);
+        }
+        prevSection = r.section;
+
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+
+        const label = document.createElement("div");
+        label.className = "row-label";
+        label.textContent = r.label;
+
+        const spotsWrap = document.createElement("div");
+        spotsWrap.className = "spots";
+
+        function makeSpot(i){
+          const spotId = r.label + String(i);
+          const btn = document.createElement("div");
+          btn.className = "spot";
+          btn.textContent = i;
+
+          // Mark taken/yours
+          if(isTakenByOther(lotName, spotId)){
+            btn.classList.add("taken");
+          }
+          if(isYours(lotName, spotId)){
+            btn.classList.add("yours");
+          }
+
+          // If this is the current stored spot (and same lot), highlight as yours too
+          if(currentLot === lotName && currentSpot === spotId){
+            btn.classList.add("yours");
+          }
+
+          btn.addEventListener("click", () => {
+            if(btn.classList.contains("taken")) return;
+
+            // clear previous selection
+            const all = rowsEl.querySelectorAll(".spot.selected");
+            all.forEach(x => x.classList.remove("selected"));
+
+            btn.classList.add("selected");
+            selectedSpotId = spotId;
+            selectionText.innerHTML = `Selected spot: <strong>${lotName} - ${spotId}</strong>`;
+            confirmBtn.disabled = false;
+          });
+
+          return btn;
+        }
+
+        if(r.split){
+          // two blocks of 8 (1-8) aisle (9-16)
+          const left = document.createElement("div");
+          left.className = "block";
+          for(let i=1;i<=8;i++) left.appendChild(makeSpot(i));
+
+          const aisle = document.createElement("div");
+          aisle.className = "aisle";
+
+          const right = document.createElement("div");
+          right.className = "block";
+          for(let i=9;i<=16;i++) right.appendChild(makeSpot(i));
+
+          spotsWrap.appendChild(left);
+          spotsWrap.appendChild(aisle);
+          spotsWrap.appendChild(right);
+        } else {
+          for(let i=1;i<=r.size;i++) spotsWrap.appendChild(makeSpot(i));
+        }
+
+        rowDiv.appendChild(label);
+        rowDiv.appendChild(spotsWrap);
+        rowsEl.appendChild(rowDiv);
       });
     }
 
-    areaSelect.addEventListener("change", () => render(areaSelect.value));
-    render("All");
+    function releaseOldSpotIfOwned(){
+      const profile = getProfile();
+      if(!profile.parkingLot || !profile.lotNumber) return;
+
+      const oldLot = profile.parkingLot;
+      const oldSpot = profile.lotNumber;
+
+      const owners = getOwners();
+      if(!owners[oldLot]) owners[oldLot] = {};
+
+      if(owners[oldLot][oldSpot] === session.email){
+        delete owners[oldLot][oldSpot];
+        setOwners(owners);
+      }
+    }
+
+    confirmBtn.addEventListener("click", () => {
+      hideMessage();
+      const lotName = lotSelect.value;
+
+      if(!selectedSpotId){
+        showMessage("error", "Please select a spot first.");
+        return;
+      }
+
+      // If selected spot is taken by someone else, block
+      if(isTakenByOther(lotName, selectedSpotId)){
+        showMessage("error", "That spot is already taken.");
+        return;
+      }
+
+      // Release old spot if it was owned by this user
+      releaseOldSpotIfOwned();
+
+      // Save new ownership
+      const owners = getOwners();
+      if(!owners[lotName]) owners[lotName] = {};
+      owners[lotName][selectedSpotId] = session.email;
+      setOwners(owners);
+
+      // Save profile
+      const profile = getProfile();
+      profile.parkingLot = lotName;
+      profile.lotNumber = selectedSpotId; // e.g., B12
+      setProfile(profile);
+
+      showMessage("success", `Saved! Your spot is now ${lotName}, ${selectedSpotId}.`);
+      renderLot();
+    });
+
+    lotSelect.addEventListener("change", renderLot);
+
+    // Initial render
+    renderLot();
   </script>
 </body>
 </html>

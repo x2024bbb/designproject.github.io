@@ -52,10 +52,9 @@
     }
     h1{margin:0 0 6px; font-size:20px;}
     .sub{margin:0; color:var(--muted); font-size:13px; line-height:1.4;}
+
     .nav{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
+      display:flex; gap:10px; flex-wrap:wrap;
     }
     .ghost{
       border:1px solid rgba(255,255,255,0.18);
@@ -93,19 +92,6 @@
     }
     .spot-line strong{color:var(--text);}
 
-    label{font-size:12px; color:var(--muted);}
-    select, input{
-      width:100%;
-      background:rgba(255,255,255,0.06);
-      border:1px solid rgba(255,255,255,0.12);
-      border-radius:14px;
-      padding:10px 12px;
-      color:var(--text);
-      outline:none;
-      font-size:14px;
-      margin-top:6px;
-    }
-
     .btn{
       margin-top:10px;
       width:100%;
@@ -119,6 +105,9 @@
       background: linear-gradient(135deg, var(--primary), var(--primary-2));
       box-shadow: 0 16px 40px rgba(110,168,255,0.25);
       transition: transform 140ms ease, filter 140ms ease;
+      text-decoration:none;
+      display:inline-block;
+      text-align:center;
     }
     .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
 
@@ -154,6 +143,7 @@
       background: rgba(255,90,122,0.12);
       color: rgba(255,215,225,0.98);
     }
+
     .note{
       margin-top:10px;
       color:rgba(231,238,252,0.55);
@@ -169,17 +159,16 @@
       <div class="top">
         <div>
           <h1>Manage Parking Spot</h1>
-          <p class="sub">Remove your current spot and choose a new one from available options.</p>
+          <p class="sub">Remove your current spot, or choose a new one using the theatre-style map.</p>
           <p class="spot-line" id="currentSpotLine">Current spot: <strong>—</strong></p>
         </div>
         <div class="nav">
           <a class="ghost" href="dashboard.html">Back to Dashboard</a>
-          <a class="ghost" href="parking-lots.html">View Lots</a>
+          <a class="ghost" href="parking-lots.html">Choose a Spot</a>
         </div>
       </div>
 
       <div class="grid">
-        <!-- Remove -->
         <div class="panel">
           <h3 style="margin:0 0 6px; font-size:16px;">Remove Current Spot</h3>
           <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
@@ -189,40 +178,19 @@
           <button class="danger" id="removeBtn" type="button">Remove My Parking Spot</button>
 
           <div class="note">
-            After removal, you can immediately select a new spot on the right.
+            After removal, go to “Choose a Spot” to pick a new one.
           </div>
         </div>
 
-        <!-- Select new -->
         <div class="panel">
-          <h3 style="margin:0 0 6px; font-size:16px;">Select a New Spot</h3>
+          <h3 style="margin:0 0 6px; font-size:16px;">Choose a New Spot</h3>
           <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
-            Choose a parking lot area and a lot number.
+            Open the interactive parking lot view and select a spot.
           </p>
 
-          <div style="margin-top:10px;">
-            <label for="lotSelect">Parking Lot</label>
-            <select id="lotSelect">
-              <option>Nasso Family Science Centre</option>
-              <option>Mulroney</option>
-              <option>Bloomfield</option>
-              <option>Bruce Brown</option>
-              <option>Keating Centre</option>
-            </select>
-          </div>
+          <a class="btn" href="parking-lots.html">Open Parking Lot Map</a>
 
-          <div style="margin-top:10px;">
-            <label for="numberInput">Lot Number</label>
-            <input id="numberInput" placeholder="e.g., Lot 22" />
-          </div>
-
-          <button class="btn" id="saveSpotBtn" type="button">Save New Spot</button>
-
-          <div class="message" id="msg"></div>
-
-          <div class="note">
-            Note: This is demo logic. Later, we can restrict available numbers and show true availability.
-          </div>
+          <div id="msg" class="message"></div>
         </div>
       </div>
     </div>
@@ -240,20 +208,22 @@
     }
 
     function getProfile() {
-      try {
-        return JSON.parse(localStorage.getItem("stfx_profile")) || {};
-      } catch {
-        return {};
-      }
+      try { return JSON.parse(localStorage.getItem("stfx_profile")) || {}; }
+      catch { return {}; }
     }
-
     function setProfile(profile) {
       localStorage.setItem("stfx_profile", JSON.stringify(profile));
     }
 
+    function getOwners(){
+      try { return JSON.parse(localStorage.getItem("stfx_spot_owners")) || {}; }
+      catch { return {}; }
+    }
+    function setOwners(owners){
+      localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
+    }
+
     const currentSpotLine = document.getElementById("currentSpotLine");
-    const lotSelect = document.getElementById("lotSelect");
-    const numberInput = document.getElementById("numberInput");
     const msg = document.getElementById("msg");
 
     function showMessage(type, text) {
@@ -271,32 +241,28 @@
       }
     }
 
+    function releaseOwnedSpot(){
+      const p = getProfile();
+      if(!p.parkingLot || !p.lotNumber) return;
+
+      const owners = getOwners();
+      if(owners[p.parkingLot] && owners[p.parkingLot][p.lotNumber] === session.email){
+        delete owners[p.parkingLot][p.lotNumber];
+        setOwners(owners);
+      }
+    }
+
     refreshCurrentSpot();
 
     document.getElementById("removeBtn").addEventListener("click", () => {
+      releaseOwnedSpot();
+
       const p = getProfile();
       delete p.parkingLot;
       delete p.lotNumber;
       setProfile(p);
+
       showMessage("success", "Parking spot removed.");
-      refreshCurrentSpot();
-    });
-
-    document.getElementById("saveSpotBtn").addEventListener("click", () => {
-      const chosenLot = lotSelect.value;
-      const lotNumber = numberInput.value.trim();
-
-      if (!lotNumber) {
-        showMessage("error", "Please enter a lot number (e.g., Lot 22).");
-        return;
-      }
-
-      const p = getProfile();
-      p.parkingLot = chosenLot;
-      p.lotNumber = lotNumber;
-      setProfile(p);
-
-      showMessage("success", "New parking spot saved successfully.");
       refreshCurrentSpot();
     });
   </script>

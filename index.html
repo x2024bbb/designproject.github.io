@@ -32,7 +32,7 @@
       place-items:center;
       padding:24px;
     }
-    .wrap{width:min(460px,100%);}
+    .wrap{width:min(520px,100%);}
     .brand{
       display:flex; align-items:center; gap:10px;
       margin-bottom:14px; user-select:none;
@@ -46,6 +46,7 @@
     }
     .brand h1{font-size:18px; margin:0; line-height:1.1;}
     .brand p{margin:2px 0 0; font-size:12px; color:var(--muted);}
+
     .card{
       background:var(--card);
       border:1px solid var(--card-border);
@@ -55,10 +56,13 @@
       backdrop-filter:blur(14px);
       -webkit-backdrop-filter:blur(14px);
     }
+
     .top-row{
-      display:flex; align-items:center; justify-content:space-between;
+      display:flex; align-items:flex-start; justify-content:space-between;
       gap:12px; margin-bottom:10px;
+      flex-wrap:wrap;
     }
+
     .pill{
       display:inline-flex; gap:6px; padding:6px;
       border-radius:999px;
@@ -72,13 +76,16 @@
       color:rgba(231,238,252,0.75);
       font-weight:700; font-size:12px;
       transition:background 140ms ease, color 140ms ease;
+      white-space:nowrap;
     }
     .pill button.active{
       background:rgba(255,255,255,0.10);
       color:var(--text);
     }
+
     h2{margin:0 0 6px; font-size:20px;}
     .subtitle{margin:0 0 16px; color:var(--muted); font-size:13px; line-height:1.4;}
+
     form{display:grid; gap:12px;}
     .field{display:grid; gap:6px;}
     label{font-size:12px; color:var(--muted);}
@@ -96,6 +103,7 @@
       color:var(--text); font-size:14px;
     }
     input::placeholder{color:rgba(231,238,252,0.45);}
+
     .icon-btn{
       border:none; background:transparent;
       color:rgba(231,238,252,0.75);
@@ -104,17 +112,7 @@
       line-height:0;
     }
     .icon-btn:hover{background:rgba(255,255,255,0.07);}
-    .row{
-      display:flex; align-items:center; justify-content:space-between;
-      gap:10px; margin-top:4px;
-    }
-    .check{
-      display:flex; align-items:center; gap:8px;
-      color:var(--muted); font-size:12px; user-select:none;
-    }
-    .check input{width:14px; height:14px; accent-color:var(--primary);}
-    .link{color:rgba(110,168,255,0.9); text-decoration:none; font-size:12px;}
-    .link:hover{text-decoration:underline;}
+
     .btn{
       margin-top:6px; width:100%;
       border:none; cursor:pointer;
@@ -126,6 +124,15 @@
       transition:transform 140ms ease, filter 140ms ease;
     }
     .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
+
+    .row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px; margin-top:4px;
+    }
+
+    .link{color:rgba(110,168,255,0.9); text-decoration:none; font-size:12px;}
+    .link:hover{text-decoration:underline;}
+
     .message{
       margin-top:12px;
       font-size:12px;
@@ -146,11 +153,12 @@
       background:rgba(53,211,157,0.12);
       color:rgba(201,255,239,0.98);
     }
-    .footer{
-      margin-top:14px;
-      text-align:center;
+
+    .hint{
       color:rgba(231,238,252,0.55);
       font-size:12px;
+      line-height:1.35;
+      margin-top:6px;
     }
   </style>
 </head>
@@ -164,201 +172,361 @@
       </div>
     </div>
 
-    <div class="card" id="authCard">
+    <div class="card">
       <div class="top-row">
         <div>
           <h2 id="title">Welcome back</h2>
-          <p class="subtitle" id="subtitle">Login to continue.</p>
+          <p class="subtitle" id="subtitle">Login with your username and password.</p>
         </div>
-        <div class="pill">
+
+        <div class="pill" aria-label="Switch between Login and First-time Access">
           <button id="tabLogin" class="active" type="button">Login</button>
-          <button id="tabSignup" type="button">Signup</button>
+          <button id="tabAccess" type="button">First-time Access</button>
         </div>
       </div>
 
-      <form id="authForm" novalidate>
+      <!-- LOGIN -->
+      <form id="loginForm" novalidate>
         <div class="field">
-          <label for="email">Email</label>
+          <label for="loginUser">Username</label>
           <div class="input">
-            <input id="email" type="email" placeholder="you@example.com" required />
+            <input id="loginUser" placeholder="e.g., jsuresh" required />
+          </div>
+          <div class="hint">Username = your email ID without the web address (example: jsuresh, not jsuresh@stfx.ca).</div>
+        </div>
+
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <div class="input">
+            <input id="loginPass" type="password" placeholder="Enter your password" required minlength="6" />
+            <button type="button" class="icon-btn" id="toggleLoginPass" aria-label="Show password">👁</button>
+          </div>
+        </div>
+
+        <button class="btn" type="submit">Sign in</button>
+        <div id="loginMsg" class="message"></div>
+      </form>
+
+      <!-- ACCESS SIGNUP -->
+      <form id="accessForm" style="display:none" novalidate>
+        <div class="field">
+          <label for="accessCode">Access Code</label>
+          <div class="input">
+            <input id="accessCode" placeholder="ABCD-1234-EFGH-5678" required />
           </div>
         </div>
 
         <div class="field">
-          <label for="password">Password</label>
+          <label for="newUser">Create Username</label>
           <div class="input">
-            <input id="password" type="password" placeholder="Enter a password" required minlength="6" />
-            <button type="button" class="icon-btn" id="togglePassword" aria-label="Show password">👁</button>
+            <input id="newUser" placeholder="e.g., jsuresh" required />
+          </div>
+          <div class="hint">No “@domain”. Letters and numbers only (dots/underscores allowed).</div>
+        </div>
+
+        <div class="field">
+          <label for="newName">Your Name</label>
+          <div class="input">
+            <input id="newName" placeholder="e.g., John Suresh" required />
           </div>
         </div>
 
-        <div class="row">
-          <label class="check">
-            <input type="checkbox" id="rememberMe" />
-            Remember me
-          </label>
-          <a class="link" href="#" id="forgotLink">Forgot password?</a>
+        <div class="field">
+          <label for="newPass">Create Password</label>
+          <div class="input">
+            <input id="newPass" type="password" placeholder="Minimum 6 characters" required minlength="6" />
+            <button type="button" class="icon-btn" id="toggleNewPass" aria-label="Show password">👁</button>
+          </div>
         </div>
 
-        <button class="btn" type="submit" id="submitBtn">Sign in</button>
+        <button class="btn" type="submit">Create Account</button>
+        <div id="accessMsg" class="message"></div>
 
-        <div id="msg" class="message"></div>
-
-        <div class="footer">
-          <span id="footerText">Don’t have an account?</span>
-          <a class="link" href="#" id="footerAction">Create one</a>
+        <div class="hint">
+          The access code is required only for your first registration.
         </div>
       </form>
+
+      <div class="row" style="margin-top:14px;">
+        <a class="link" href="#" id="resetLink">Reset saved login (this device)</a>
+      </div>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById("authForm");
-    const msg = document.getElementById("msg");
 
-    const tabLogin = document.getElementById("tabLogin");
-    const tabSignup = document.getElementById("tabSignup");
+    const ACCESS_CODE = "ABCD-1234-EFGH-5678";
 
-    const title = document.getElementById("title");
-    const subtitle = document.getElementById("subtitle");
-    const submitBtn = document.getElementById("submitBtn");
-    const footerText = document.getElementById("footerText");
-    const footerAction = document.getElementById("footerAction");
-    const forgotLink = document.getElementById("forgotLink");
+    function migrateLegacyData(){
+      // Clear previous demo keys (older version)
+      localStorage.removeItem("demo_session");
+      localStorage.removeItem("demo_users");
 
-    const toggle = document.getElementById("togglePassword");
-    const password = document.getElementById("password");
+      // Remove any seeded "system" owners from earlier builds
+      try{
+        const owners = JSON.parse(localStorage.getItem("stfx_spot_owners")) || {};
+        let changed = false;
+        Object.keys(owners).forEach(lot => {
+          Object.keys(owners[lot] || {}).forEach(spot => {
+            if(owners[lot][spot] === "system"){
+              delete owners[lot][spot];
+              changed = true;
+            }
+          });
+          // clean empty lot object
+          if(Object.keys(owners[lot] || {}).length === 0){
+            // keep as empty for simplicity
+          }
+        });
+        if(changed){
+          localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
+        }
+      }catch(e){}
+    }
 
-    let mode = "login"; // login | signup
+    function getSession(){
+      try { return JSON.parse(localStorage.getItem("stfx_session")); }
+      catch { return null; }
+    }
+    function setSession(username){
+      localStorage.setItem("stfx_session", JSON.stringify({username, ts: Date.now()}));
+    }
+    function clearSession(){
+      localStorage.removeItem("stfx_session");
+    }
 
     function getUsers(){
-      try { return JSON.parse(localStorage.getItem("demo_users")) || {}; }
+      try { return JSON.parse(localStorage.getItem("stfx_users")) || {}; }
       catch { return {}; }
     }
     function setUsers(users){
-      localStorage.setItem("demo_users", JSON.stringify(users));
-    }
-    function setSession(email, remember){
-      localStorage.setItem("demo_session", JSON.stringify({email, remember: !!remember, ts: Date.now()}));
-    }
-    function getSession(){
-      try { return JSON.parse(localStorage.getItem("demo_session")); }
-      catch { return null; }
+      localStorage.setItem("stfx_users", JSON.stringify(users));
     }
 
-    function showMessage(type, text){
-      msg.className = "message " + type;
-      msg.textContent = text;
-      msg.style.display = "block";
+    function getProfile(username){
+      try {
+        const all = JSON.parse(localStorage.getItem("stfx_profiles")) || {};
+        return all[username] || {};
+      } catch { return {}; }
     }
-    function hideMessage(){
-      msg.style.display = "none";
-      msg.textContent = "";
-      msg.className = "message";
+    function setProfile(username, profile){
+      const all = (() => {
+        try { return JSON.parse(localStorage.getItem("stfx_profiles")) || {}; }
+        catch { return {}; }
+      })();
+      all[username] = profile;
+      localStorage.setItem("stfx_profiles", JSON.stringify(all));
     }
 
-    function setMode(next){
-      mode = next;
-      hideMessage();
+    function getOwners(){
+      try { return JSON.parse(localStorage.getItem("stfx_spot_owners")) || {}; }
+      catch { return {}; }
+    }
+    function setOwners(owners){
+      localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
+    }
 
-      if(mode === "login"){
-        tabLogin.classList.add("active");
-        tabSignup.classList.remove("active");
-        title.textContent = "Welcome back";
-        subtitle.textContent = "Login to continue.";
-        submitBtn.textContent = "Sign in";
-        footerText.textContent = "Don’t have an account?";
-        footerAction.textContent = "Create one";
-        forgotLink.style.display = "inline";
-      } else {
-        tabSignup.classList.add("active");
-        tabLogin.classList.remove("active");
-        title.textContent = "Create an account";
-        subtitle.textContent = "Signup to get started.";
-        submitBtn.textContent = "Create account";
-        footerText.textContent = "Already have an account?";
-        footerAction.textContent = "Sign in";
-        forgotLink.style.display = "none";
+    function todayISO(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const da = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
+    }
+
+    function cleanupTempSpot(username){
+      const profile = getProfile(username);
+      if(!profile || !profile.tempDate) return;
+
+      if(profile.tempDate !== todayISO()){
+        if(profile.tempParkingLot && profile.tempLotNumber){
+          const owners = getOwners();
+          const lot = profile.tempParkingLot;
+          const spot = profile.tempLotNumber;
+          if(owners[lot] && owners[lot][spot] === username){
+            delete owners[lot][spot];
+            setOwners(owners);
+          }
+        }
+
+        delete profile.tempDate;
+        delete profile.tempParkingLot;
+        delete profile.tempLotNumber;
+        setProfile(username, profile);
       }
     }
 
-    function isValidEmail(email){
-      return typeof email === "string" && email.includes("@") && email.includes(".");
+    function requireAuth(){
+      migrateLegacyData();
+      const s = getSession();
+      if(!s || !s.username){
+        window.location.href = "index.html";
+        return null;
+      }
+      cleanupTempSpot(s.username);
+      return s;
+    }
+
+    const loginForm = document.getElementById("loginForm");
+    const accessForm = document.getElementById("accessForm");
+    const tabLogin = document.getElementById("tabLogin");
+    const tabAccess = document.getElementById("tabAccess");
+    const title = document.getElementById("title");
+    const subtitle = document.getElementById("subtitle");
+
+    const loginMsg = document.getElementById("loginMsg");
+    const accessMsg = document.getElementById("accessMsg");
+
+    function showMsg(el, type, text){
+      el.className = "message " + type;
+      el.textContent = text;
+      el.style.display = "block";
+    }
+    function hideMsg(el){
+      el.style.display = "none";
+      el.textContent = "";
+      el.className = "message";
+    }
+
+    function normalizeUsername(u){
+      return (u || "").trim().toLowerCase();
+    }
+
+    function isValidUsername(u){
+      if(!u) return false;
+      if(u.includes("@")) return false;
+      // allow letters/numbers/_/.
+      return /^[a-z0-9._-]+$/.test(u);
+    }
+
+    function setMode(mode){
+      hideMsg(loginMsg); hideMsg(accessMsg);
+      if(mode === "login"){
+        tabLogin.classList.add("active");
+        tabAccess.classList.remove("active");
+        loginForm.style.display = "grid";
+        accessForm.style.display = "none";
+        title.textContent = "Welcome back";
+        subtitle.textContent = "Login with your username and password.";
+      } else {
+        tabAccess.classList.add("active");
+        tabLogin.classList.remove("active");
+        loginForm.style.display = "none";
+        accessForm.style.display = "grid";
+        title.textContent = "First-time access";
+        subtitle.textContent = "Enter the access code once to create your account.";
+      }
     }
 
     function goToDashboard(){
       window.location.href = "dashboard.html";
     }
 
-    toggle.addEventListener("click", () => {
-      const hidden = password.type === "password";
-      password.type = hidden ? "text" : "password";
-      toggle.textContent = hidden ? "🙈" : "👁";
+    // Password toggles
+    document.getElementById("toggleLoginPass").addEventListener("click", () => {
+      const el = document.getElementById("loginPass");
+      el.type = el.type === "password" ? "text" : "password";
+    });
+    document.getElementById("toggleNewPass").addEventListener("click", () => {
+      const el = document.getElementById("newPass");
+      el.type = el.type === "password" ? "text" : "password";
     });
 
     tabLogin.addEventListener("click", () => setMode("login"));
-    tabSignup.addEventListener("click", () => setMode("signup"));
-    footerAction.addEventListener("click", (e) => {
+    tabAccess.addEventListener("click", () => setMode("access"));
+
+    loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      setMode(mode === "login" ? "signup" : "login");
-    });
+      hideMsg(loginMsg);
 
-    forgotLink.addEventListener("click", (e) => {
-      e.preventDefault();
-      showMessage("error", "Password reset is not enabled in demo mode.");
-    });
+      const username = normalizeUsername(document.getElementById("loginUser").value);
+      const password = document.getElementById("loginPass").value.trim();
 
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      hideMessage();
-
-      const email = document.getElementById("email").value.trim().toLowerCase();
-      const pass = document.getElementById("password").value.trim();
-      const remember = document.getElementById("rememberMe").checked;
-
-      if(!isValidEmail(email)){
-        showMessage("error", "Please enter a valid email address.");
+      if(!isValidUsername(username)){
+        showMsg(loginMsg, "error", "Please enter a valid username (no @domain).");
         return;
       }
-      if(pass.length < 6){
-        showMessage("error", "Password must be at least 6 characters.");
+      if(password.length < 6){
+        showMsg(loginMsg, "error", "Password must be at least 6 characters.");
         return;
       }
 
       const users = getUsers();
-
-      if(mode === "signup"){
-        if(users[email]){
-          showMessage("error", "This email is already registered. Try logging in.");
-          setMode("login");
-          return;
-        }
-        users[email] = pass;
-        setUsers(users);
-        setSession(email, remember);
-        showMessage("success", "Account created. Redirecting...");
-        setTimeout(goToDashboard, 650);
+      if(!users[username]){
+        showMsg(loginMsg, "error", "No account found. Use First-time Access to create your account.");
+        setMode("access");
         return;
       }
 
-      if(!users[email]){
-        showMessage("error", "No account found. Please sign up first.");
-        setMode("signup");
-        return;
-      }
-      if(users[email] !== pass){
-        showMessage("error", "Incorrect password. Try again.");
+      if(users[username].password !== password){
+        showMsg(loginMsg, "error", "Incorrect password. Try again.");
         return;
       }
 
-      setSession(email, remember);
-      showMessage("success", "Login successful. Redirecting...");
-      setTimeout(goToDashboard, 650);
+      setSession(username);
+      showMsg(loginMsg, "success", "Login successful. Redirecting...");
+      setTimeout(goToDashboard, 450);
+    });
+
+    accessForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      hideMsg(accessMsg);
+
+      const code = document.getElementById("accessCode").value.trim();
+      const username = normalizeUsername(document.getElementById("newUser").value);
+      const name = document.getElementById("newName").value.trim();
+      const password = document.getElementById("newPass").value.trim();
+
+      if(code !== ACCESS_CODE){
+        showMsg(accessMsg, "error", "Invalid access code.");
+        return;
+      }
+      if(!isValidUsername(username)){
+        showMsg(accessMsg, "error", "Invalid username. Use letters/numbers only (no @domain).");
+        return;
+      }
+      if(!name){
+        showMsg(accessMsg, "error", "Please enter your name.");
+        return;
+      }
+      if(password.length < 6){
+        showMsg(accessMsg, "error", "Password must be at least 6 characters.");
+        return;
+      }
+
+      const users = getUsers();
+      if(users[username]){
+        showMsg(accessMsg, "error", "This username already exists. Please choose another one.");
+        return;
+      }
+
+      // Create user
+      users[username] = { name, password };
+      setUsers(users);
+
+      // Create profile defaults (no assigned spot yet)
+      const profile = getProfile(username);
+      profile.name = name;
+      if(!profile.parkingLot) profile.parkingLot = "";
+      if(!profile.lotNumber) profile.lotNumber = "";
+      setProfile(username, profile);
+
+      setSession(username);
+      showMsg(accessMsg, "success", "Account created. Redirecting...");
+      setTimeout(goToDashboard, 450);
+    });
+
+    // Reset (device)
+    document.getElementById("resetLink").addEventListener("click", (e) => {
+      e.preventDefault();
+      localStorage.removeItem("stfx_session");
+      showMsg(loginMsg, "success", "Login reset for this device. You can sign in again.");
+      setMode("login");
     });
 
     // Auto redirect if already logged in
-    const session = getSession();
-    if(session && session.email){
+    const s = getSession();
+    if(s && s.username){
       goToDashboard();
     } else {
       setMode("login");

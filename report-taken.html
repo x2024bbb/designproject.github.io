@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>StFX Parking - Manage Spot</title>
+  <title>StFX Parking - Report Spot Taken</title>
   <style>
     :root{
       --bg:#0b1220;
@@ -70,19 +70,12 @@
     }
     .ghost:hover{background:rgba(255,255,255,0.08); transform:translateY(-1px);}
 
-    .grid{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:14px;
-    }
-    @media (max-width: 760px){ .grid{grid-template-columns:1fr;} }
-
     .panel{
+      margin-top:14px;
       border-radius:16px;
       border:1px solid rgba(255,255,255,0.12);
       background:rgba(255,255,255,0.04);
-      padding:14px;
+      padding:16px;
     }
 
     .spot-line{
@@ -93,8 +86,7 @@
     .spot-line strong{color:var(--text);}
 
     .btn{
-      margin-top:10px;
-      width:100%;
+      margin-top:12px;
       border:none;
       cursor:pointer;
       padding:12px 14px;
@@ -105,26 +97,13 @@
       background: linear-gradient(135deg, var(--primary), var(--primary-2));
       box-shadow: 0 16px 40px rgba(110,168,255,0.25);
       transition: transform 140ms ease, filter 140ms ease;
-      text-decoration:none;
-      display:inline-block;
+      width:100%;
       text-align:center;
     }
     .btn:hover{transform:translateY(-1px); filter:brightness(1.05);}
 
-    .danger{
-      background: rgba(255,90,122,0.14);
-      border: 1px solid rgba(255,90,122,0.35);
-      color: rgba(255,215,225,0.98);
-      border-radius:14px;
-      padding:10px 12px;
-      cursor:pointer;
-      font-weight:800;
-      width:100%;
-      margin-top:10px;
-    }
-
     .message{
-      margin-top:10px;
+      margin-top:12px;
       font-size:12px;
       padding:10px 12px;
       border-radius:14px;
@@ -137,6 +116,12 @@
       background: rgba(53,211,157,0.12);
       color: rgba(201,255,239,0.98);
     }
+    .message.error{
+      display:block;
+      border-color: rgba(255,90,122,0.35);
+      background: rgba(255,90,122,0.12);
+      color: rgba(255,215,225,0.98);
+    }
 
     .note{
       margin-top:10px;
@@ -146,45 +131,28 @@
     }
   </style>
 </head>
-
 <body>
   <div class="wrap">
     <div class="card">
       <div class="top">
         <div>
-          <h1>Manage Parking Spot</h1>
-          <p class="sub">Remove your current spot, or choose a new one using the theatre-style map.</p>
-          <p class="spot-line" id="currentSpotLine">Current spot: <strong>—</strong></p>
+          <h1>Report Parking Spot Taken</h1>
+          <p class="sub">If someone is parked in your allocated spot, you can get a temporary spot for today.</p>
+          <p class="spot-line" id="allocatedLine">Allocated spot: <strong>—</strong></p>
+          <p class="spot-line" id="tempLine" style="display:none;"></p>
         </div>
         <div class="nav">
           <a class="ghost" href="dashboard.html">Back to Dashboard</a>
-          <a class="ghost" href="parking-lots.html">Choose a Spot</a>
+          <a class="ghost" href="parking-lots.html">View Lots</a>
         </div>
       </div>
 
-      <div class="grid">
-        <div class="panel">
-          <h3 style="margin:0 0 6px; font-size:16px;">Remove Current Spot</h3>
-          <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
-            This will clear your allocated parking spot.
-          </p>
+      <div class="panel">
+        <button class="btn" id="assignBtn" type="button">Find Closest Available Spot (Today Only)</button>
+        <div id="msg" class="message"></div>
 
-          <button class="danger" id="removeBtn" type="button">Remove My Parking Spot</button>
-
-          <div class="note">
-            After removal, go to “Choose a Spot” to pick a new one.
-          </div>
-        </div>
-
-        <div class="panel">
-          <h3 style="margin:0 0 6px; font-size:16px;">Choose a New Spot</h3>
-          <p style="margin:0; color:rgba(231,238,252,0.7); font-size:13px; line-height:1.4;">
-            Open the interactive parking lot view and select a spot.
-          </p>
-
-          <a class="btn" href="parking-lots.html">Open Parking Lot Map</a>
-
-          <div id="msg" class="message"></div>
+        <div class="note">
+          Your original spot stays reserved for you. The temporary spot is only valid for today.
         </div>
       </div>
     </div>
@@ -308,39 +276,108 @@
     if(!s) throw new Error("Not authenticated");
     const username = s.username;
 
-    const currentSpotLine = document.getElementById("currentSpotLine");
+    const allocatedLine = document.getElementById("allocatedLine");
+    const tempLine = document.getElementById("tempLine");
     const msg = document.getElementById("msg");
 
-    function showMessage(type, text) {
+    const lotsOrder = [
+      "Nasso Family Science Centre",
+      "Mulroney",
+      "Bloomfield",
+      "Bruce Brown",
+      "Keating Centre"
+    ];
+
+    const lotLayouts = {
+      "Nasso Family Science Centre": { type: "simple8" },
+      "Mulroney": { type: "simple8" },
+      "Keating Centre": { type: "simple8" },
+      "Bloomfield": { type: "double16" },
+      "Bruce Brown": { type: "double16" }
+    };
+
+    function showMessage(type, text){
       msg.className = "message " + type;
       msg.textContent = text;
       msg.style.display = "block";
     }
+    function hideMessage(){
+      msg.style.display = "none";
+      msg.textContent = "";
+      msg.className = "message";
+    }
 
-    function refreshCurrentSpot() {
-      const p = getProfile(username);
-      if (p.parkingLot && p.lotNumber) {
-        currentSpotLine.innerHTML = `Current spot: <strong>${p.parkingLot}, ${p.lotNumber}</strong>`;
+    function buildRows(lotName){
+      const layout = lotLayouts[lotName] || { type: "simple8" };
+      const rows = [];
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+      if(layout.type === "simple8"){
+        rows.push({ label: "A", size: 8 });
+        rows.push({ label: "B", size: 8 });
+        rows.push({ label: "C", size: 8 });
+        rows.push({ label: "D", size: 8 });
       } else {
-        currentSpotLine.innerHTML = `Current spot: <strong>Not allocated</strong>`;
+        rows.push({ label: "A", size: 8 });
+        for(let i=1;i<=8;i++){
+          rows.push({ label: letters[i], size: 16 });
+        }
+        rows.push({ label: "J", size: 8 });
       }
+      return rows;
     }
 
-    function releaseOwnedSpot(){
-      const p = getProfile(username);
-      if(!p.parkingLot || !p.lotNumber) return;
+    function listSpotsInOrder(lotName){
+      const rows = buildRows(lotName);
+      const spots = [];
+      rows.forEach(r => {
+        for(let i=1;i<=r.size;i++){
+          spots.push(r.label + String(i));
+        }
+      });
+      return spots;
+    }
 
+    function ownerOf(lotName, spotId){
       const owners = getOwners();
-      const lot = p.parkingLot;
-      const spot = p.lotNumber;
+      return owners?.[lotName]?.[spotId] || null;
+    }
 
-      if(owners[lot] && owners[lot][spot] === username){
-        delete owners[lot][spot];
-        setOwners(owners);
+    function isAvailable(lotName, spotId){
+      return !ownerOf(lotName, spotId);
+    }
+
+    function reserveTempSpot(lotName, spotId){
+      const owners = getOwners();
+      if(!owners[lotName]) owners[lotName] = {};
+      owners[lotName][spotId] = username;
+      setOwners(owners);
+
+      const p = getProfile(username);
+      p.tempDate = todayISO();
+      p.tempParkingLot = lotName;
+      p.tempLotNumber = spotId;
+      setProfile(username, p);
+    }
+
+    function refreshLines(){
+      const p = getProfile(username);
+
+      if(p.parkingLot && p.lotNumber){
+        allocatedLine.innerHTML = `Allocated spot: <strong>${p.parkingLot}, ${p.lotNumber}</strong>`;
+      } else {
+        allocatedLine.innerHTML = `Allocated spot: <strong>Not allocated</strong>`;
+      }
+
+      if(p.tempDate === todayISO() && p.tempParkingLot && p.tempLotNumber){
+        tempLine.style.display = "block";
+        tempLine.innerHTML = `Temporary spot for today: <strong>${p.tempParkingLot}, ${p.tempLotNumber}</strong>`;
+      } else {
+        tempLine.style.display = "none";
       }
     }
 
-    function releaseTempIfAny(){
+    function clearExistingTempIfAny(){
       const p = getProfile(username);
       if(p.tempDate && p.tempParkingLot && p.tempLotNumber){
         const owners = getOwners();
@@ -357,21 +394,90 @@
       }
     }
 
-    refreshCurrentSpot();
+    function findClosestSpot(){
+      const p = getProfile(username);
 
-    document.getElementById("removeBtn").addEventListener("click", () => {
-      releaseOwnedSpot();
+      // If already has temp spot today, keep it
+      if(p.tempDate === todayISO() && p.tempParkingLot && p.tempLotNumber){
+        return {lot: p.tempParkingLot, spot: p.tempLotNumber, already: true};
+      }
+
+      // Start searching from allocated lot first
+      const preferredLot = p.parkingLot || lotsOrder[0];
+      const preferredSpot = p.lotNumber || null;
+
+      // Helper: find nearest in the same lot
+      function nearestInLot(lotName, referenceSpot){
+        const ordered = listSpotsInOrder(lotName);
+        if(ordered.length === 0) return null;
+
+        const refIndex = referenceSpot ? ordered.indexOf(referenceSpot) : -1;
+
+        // If reference spot not found, just pick first available
+        if(refIndex < 0){
+          for(const spot of ordered){
+            if(isAvailable(lotName, spot)) return spot;
+          }
+          return null;
+        }
+
+        // Search outward around refIndex
+        for(let d=1; d<ordered.length; d++){
+          const left = refIndex - d;
+          const right = refIndex + d;
+
+          if(left >= 0){
+            const s1 = ordered[left];
+            if(s1 !== referenceSpot && isAvailable(lotName, s1)) return s1;
+          }
+          if(right < ordered.length){
+            const s2 = ordered[right];
+            if(s2 !== referenceSpot && isAvailable(lotName, s2)) return s2;
+          }
+        }
+
+        return null;
+      }
+
+      // 1) Same lot as allocated
+      let spot = nearestInLot(preferredLot, preferredSpot);
+      if(spot) return {lot: preferredLot, spot};
+
+      // 2) Other lots in order
+      for(const lot of lotsOrder){
+        if(lot === preferredLot) continue;
+        const ordered = listSpotsInOrder(lot);
+        for(const s of ordered){
+          if(isAvailable(lot, s)) return {lot, spot: s};
+        }
+      }
+
+      return null;
+    }
+
+    refreshLines();
+
+    document.getElementById("assignBtn").addEventListener("click", () => {
+      hideMessage();
 
       const p = getProfile(username);
-      delete p.parkingLot;
-      delete p.lotNumber;
-      setProfile(username, p);
+      if(!p.parkingLot || !p.lotNumber){
+        showMessage("error", "You do not have an allocated spot yet. Please choose one first.");
+        return;
+      }
 
-      // If they remove their permanent spot, also clear any temp spot
-      releaseTempIfAny();
+      // Clear any previous temp spot (so you always get the closest current option)
+      clearExistingTempIfAny();
 
-      showMessage("success", "Parking spot removed.");
-      refreshCurrentSpot();
+      const result = findClosestSpot();
+      if(!result){
+        showMessage("error", "No available spots were found.");
+        return;
+      }
+
+      reserveTempSpot(result.lot, result.spot);
+      showMessage("success", `Temporary spot assigned for today: ${result.lot}, ${result.spot}.`);
+      refreshLines();
     });
   </script>
 </body>

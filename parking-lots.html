@@ -117,6 +117,7 @@
       border-radius:999px;
       border:1px solid var(--border);
       background:rgba(255,255,255,0.04);
+      white-space:nowrap;
     }
     .swatch{
       width:12px; height:12px; border-radius:4px;
@@ -126,6 +127,16 @@
     .swatch.taken{background:var(--taken);}
     .swatch.yours{background:var(--yours);}
     .swatch.selected{background:var(--selected);}
+
+    .count{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.05);
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      color:rgba(231,238,252,0.85);
+      white-space:nowrap;
+    }
 
     .screen{
       margin:16px 0 10px;
@@ -306,6 +317,7 @@
             <option>Bruce Brown</option>
             <option>Keating Centre</option>
           </select>
+          <div class="count" id="countPill">Available: —</div>
         </div>
 
         <div class="legend">
@@ -334,51 +346,131 @@
   </div>
 
   <script>
-    // ----------------------------
-    // Auth + Profile + Ownership
-    // ----------------------------
-    // demo_session: { email, remember, ts }
-    // stfx_profile: { name, parkingLot, lotNumber }
-    // stfx_spot_owners: { [lotName]: { [spotId]: ownerEmailOrSystem } }
-    // ----------------------------
+
+    const ACCESS_CODE = "ABCD-1234-EFGH-5678";
+
+    function migrateLegacyData(){
+      // Clear previous demo keys (older version)
+      localStorage.removeItem("demo_session");
+      localStorage.removeItem("demo_users");
+
+      // Remove any seeded "system" owners from earlier builds
+      try{
+        const owners = JSON.parse(localStorage.getItem("stfx_spot_owners")) || {};
+        let changed = false;
+        Object.keys(owners).forEach(lot => {
+          Object.keys(owners[lot] || {}).forEach(spot => {
+            if(owners[lot][spot] === "system"){
+              delete owners[lot][spot];
+              changed = true;
+            }
+          });
+          // clean empty lot object
+          if(Object.keys(owners[lot] || {}).length === 0){
+            // keep as empty for simplicity
+          }
+        });
+        if(changed){
+          localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
+        }
+      }catch(e){}
+    }
 
     function getSession(){
-      try { return JSON.parse(localStorage.getItem("demo_session")); }
+      try { return JSON.parse(localStorage.getItem("stfx_session")); }
       catch { return null; }
     }
-
-    const session = getSession();
-    if(!session || !session.email){
-      window.location.href = "index.html";
+    function setSession(username){
+      localStorage.setItem("stfx_session", JSON.stringify({username, ts: Date.now()}));
+    }
+    function clearSession(){
+      localStorage.removeItem("stfx_session");
     }
 
-    function getProfile(){
-      try { return JSON.parse(localStorage.getItem("stfx_profile")) || {}; }
+    function getUsers(){
+      try { return JSON.parse(localStorage.getItem("stfx_users")) || {}; }
       catch { return {}; }
     }
+    function setUsers(users){
+      localStorage.setItem("stfx_users", JSON.stringify(users));
+    }
 
-    function setProfile(profile){
-      localStorage.setItem("stfx_profile", JSON.stringify(profile));
+    function getProfile(username){
+      try {
+        const all = JSON.parse(localStorage.getItem("stfx_profiles")) || {};
+        return all[username] || {};
+      } catch { return {}; }
+    }
+    function setProfile(username, profile){
+      const all = (() => {
+        try { return JSON.parse(localStorage.getItem("stfx_profiles")) || {}; }
+        catch { return {}; }
+      })();
+      all[username] = profile;
+      localStorage.setItem("stfx_profiles", JSON.stringify(all));
     }
 
     function getOwners(){
       try { return JSON.parse(localStorage.getItem("stfx_spot_owners")) || {}; }
       catch { return {}; }
     }
-
     function setOwners(owners){
       localStorage.setItem("stfx_spot_owners", JSON.stringify(owners));
     }
 
-    // Deterministic seed so "taken spots" look real in demo
-    function seededRandom(seed){
-      let s = 0;
-      for(let i=0;i<seed.length;i++) s = (s + seed.charCodeAt(i) * (i+1)) % 2147483647;
-      return function(){
-        s = (s * 48271) % 2147483647;
-        return s / 2147483647;
+    function todayISO(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,'0');
+      const da = String(d.getDate()).padStart(2,'0');
+      return `${y}-${m}-${da}`;
+    }
+
+    function cleanupTempSpot(username){
+      const profile = getProfile(username);
+      if(!profile || !profile.tempDate) return;
+
+      if(profile.tempDate !== todayISO()){
+        if(profile.tempParkingLot && profile.tempLotNumber){
+          const owners = getOwners();
+          const lot = profile.tempParkingLot;
+          const spot = profile.tempLotNumber;
+          if(owners[lot] && owners[lot][spot] === username){
+            delete owners[lot][spot];
+            setOwners(owners);
+          }
+        }
+
+        delete profile.tempDate;
+        delete profile.tempParkingLot;
+        delete profile.tempLotNumber;
+        setProfile(username, profile);
       }
     }
+
+    function requireAuth(){
+      migrateLegacyData();
+      const s = getSession();
+      if(!s || !s.username){
+        window.location.href = "index.html";
+        return null;
+      }
+      cleanupTempSpot(s.username);
+      return s;
+    }
+
+    const s = requireAuth();
+    if(!s) throw new Error("Not authenticated");
+    const username = s.username;
+
+    const lotSelect = document.getElementById("lotSelect");
+    const rowsEl = document.getElementById("rows");
+    const selectionText = document.getElementById("selectionText");
+    const confirmBtn = document.getElementById("confirmBtn");
+    const msg = document.getElementById("msg");
+    const countPill = document.getElementById("countPill");
+
+    let selectedSpotId = null;
 
     const lotLayouts = {
       "Nasso Family Science Centre": { type: "simple8" },
@@ -388,68 +480,31 @@
       "Bruce Brown": { type: "double16" }
     };
 
-    // Build layout rows:
-    // simple8 => 4 rows of 8: 1 row, 2 rows, 1 row
-    // double16 => top row of 8, then 8 rows of 16 (8+aisle+8), then bottom row of 8
     function buildRows(lotName){
       const layout = lotLayouts[lotName] || { type: "simple8" };
       const rows = [];
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
       if(layout.type === "simple8"){
-        // A (top), B C (middle), D (bottom)
         rows.push({ label: "A", size: 8, split: false, section: "top" });
         rows.push({ label: "B", size: 8, split: false, section: "middle" });
         rows.push({ label: "C", size: 8, split: false, section: "middle" });
         rows.push({ label: "D", size: 8, split: false, section: "bottom" });
       } else {
-        // A top (8)
         rows.push({ label: "A", size: 8, split: false, section: "top" });
-        // B-I (8 rows) each 16 with aisle after 8
         for(let i=1;i<=8;i++){
           rows.push({ label: letters[i], size: 16, split: true, section: "middle" });
         }
-        // J bottom (8)
         rows.push({ label: "J", size: 8, split: false, section: "bottom" });
       }
 
       return rows;
     }
 
-    // Seed default taken spots for a lot (owner = "system")
-    function seedTakenSpotsIfNeeded(lotName){
-      const owners = getOwners();
-      if(!owners[lotName]) owners[lotName] = {};
-
-      // If already seeded, do nothing
-      const existingKeys = Object.keys(owners[lotName]);
-      if(existingKeys.length > 0) return;
-
+    function totalSpotsForLot(lotName){
       const rows = buildRows(lotName);
-      const rand = seededRandom("seed_" + lotName);
-
-      // Target % taken (Bloomfield/Bruce Brown busier)
-      const takeRate = (lotLayouts[lotName].type === "double16") ? 0.22 : 0.18;
-
-      rows.forEach(r => {
-        for(let i=1;i<=r.size;i++){
-          const spotId = r.label + String(i);
-          if(rand() < takeRate){
-            owners[lotName][spotId] = "system";
-          }
-        }
-      });
-
-      setOwners(owners);
+      return rows.reduce((acc, r) => acc + r.size, 0);
     }
-
-    const lotSelect = document.getElementById("lotSelect");
-    const rowsEl = document.getElementById("rows");
-    const selectionText = document.getElementById("selectionText");
-    const confirmBtn = document.getElementById("confirmBtn");
-    const msg = document.getElementById("msg");
-
-    let selectedSpotId = null;
 
     function showMessage(type, text){
       msg.className = "message " + type;
@@ -470,18 +525,27 @@
     function isTakenByOther(lotName, spotId){
       const owner = spotOwner(lotName, spotId);
       if(!owner) return false;
-      return owner !== session.email;
+      return owner !== username;
     }
 
     function isYours(lotName, spotId){
-      return spotOwner(lotName, spotId) === session.email;
+      return spotOwner(lotName, spotId) === username;
+    }
+
+    function updateCounter(lotName){
+      const owners = getOwners();
+      const taken = owners?.[lotName] ? Object.keys(owners[lotName]).length : 0;
+      const total = totalSpotsForLot(lotName);
+      const available = Math.max(0, total - taken);
+      countPill.textContent = `Available: ${available} / ${total}`;
     }
 
     function renderLot(){
       hideMessage();
       const lotName = lotSelect.value;
 
-      seedTakenSpotsIfNeeded(lotName);
+      updateCounter(lotName);
+
       const rows = buildRows(lotName);
 
       rowsEl.innerHTML = "";
@@ -489,15 +553,13 @@
       confirmBtn.disabled = true;
       selectionText.innerHTML = 'Selected spot: <strong>None</strong>';
 
-      // current profile spot (if matches this lot)
-      const profile = getProfile();
+      const profile = getProfile(username);
       const currentLot = profile.parkingLot;
-      const currentSpot = profile.lotNumber; // we store spot like "B12"
+      const currentSpot = profile.lotNumber;
 
       let prevSection = null;
 
       rows.forEach(r => {
-        // insert section gap between top/middle/bottom for the simple layout
         if(prevSection && prevSection !== r.section){
           const gap = document.createElement("div");
           gap.className = "section-gap";
@@ -521,15 +583,12 @@
           btn.className = "spot";
           btn.textContent = i;
 
-          // Mark taken/yours
           if(isTakenByOther(lotName, spotId)){
             btn.classList.add("taken");
           }
           if(isYours(lotName, spotId)){
             btn.classList.add("yours");
           }
-
-          // If this is the current stored spot (and same lot), highlight as yours too
           if(currentLot === lotName && currentSpot === spotId){
             btn.classList.add("yours");
           }
@@ -537,7 +596,6 @@
           btn.addEventListener("click", () => {
             if(btn.classList.contains("taken")) return;
 
-            // clear previous selection
             const all = rowsEl.querySelectorAll(".spot.selected");
             all.forEach(x => x.classList.remove("selected"));
 
@@ -551,7 +609,6 @@
         }
 
         if(r.split){
-          // two blocks of 8 (1-8) aisle (9-16)
           const left = document.createElement("div");
           left.className = "block";
           for(let i=1;i<=8;i++) left.appendChild(makeSpot(i));
@@ -576,8 +633,8 @@
       });
     }
 
-    function releaseOldSpotIfOwned(){
-      const profile = getProfile();
+    function releaseOwnedSpotIfOwned(){
+      const profile = getProfile(username);
       if(!profile.parkingLot || !profile.lotNumber) return;
 
       const oldLot = profile.parkingLot;
@@ -586,7 +643,7 @@
       const owners = getOwners();
       if(!owners[oldLot]) owners[oldLot] = {};
 
-      if(owners[oldLot][oldSpot] === session.email){
+      if(owners[oldLot][oldSpot] === username){
         delete owners[oldLot][oldSpot];
         setOwners(owners);
       }
@@ -601,34 +658,49 @@
         return;
       }
 
-      // If selected spot is taken by someone else, block
       if(isTakenByOther(lotName, selectedSpotId)){
         showMessage("error", "That spot is already taken.");
         return;
       }
 
-      // Release old spot if it was owned by this user
-      releaseOldSpotIfOwned();
+      // Release old owned spot
+      releaseOwnedSpotIfOwned();
 
       // Save new ownership
       const owners = getOwners();
       if(!owners[lotName]) owners[lotName] = {};
-      owners[lotName][selectedSpotId] = session.email;
+      owners[lotName][selectedSpotId] = username;
       setOwners(owners);
 
       // Save profile
-      const profile = getProfile();
+      const profile = getProfile(username);
       profile.parkingLot = lotName;
-      profile.lotNumber = selectedSpotId; // e.g., B12
-      setProfile(profile);
+      profile.lotNumber = selectedSpotId;
+
+      // If user had a temp spot, clear it when they pick a new permanent spot
+      if(profile.tempDate && profile.tempParkingLot && profile.tempLotNumber){
+        // release temp ownership
+        const o2 = getOwners();
+        const tl = profile.tempParkingLot;
+        const ts = profile.tempLotNumber;
+        if(o2[tl] && o2[tl][ts] === username){
+          delete o2[tl][ts];
+          setOwners(o2);
+        }
+        delete profile.tempDate;
+        delete profile.tempParkingLot;
+        delete profile.tempLotNumber;
+      }
+
+      setProfile(username, profile);
 
       showMessage("success", `Saved! Your spot is now ${lotName}, ${selectedSpotId}.`);
+      updateCounter(lotName);
       renderLot();
     });
 
     lotSelect.addEventListener("change", renderLot);
 
-    // Initial render
     renderLot();
   </script>
 </body>

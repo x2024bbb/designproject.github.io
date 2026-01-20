@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>StFX Parking - View Lots</title>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --card:rgba(255,255,255,0.06);
+      --card-border:rgba(255,255,255,0.12);
+      --text:#e7eefc;
+      --muted:rgba(231,238,252,0.7);
+      --primary:#6ea8ff;
+      --primary-2:#8b5cf6;
+      --shadow:0 20px 60px rgba(0,0,0,0.45);
+      --radius:18px;
+      --open:#35d39d;
+      --closed:#ff5a7a;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 600px at 20% 10%, rgba(139,92,246,0.25), transparent 60%),
+                  radial-gradient(900px 500px at 80% 20%, rgba(110,168,255,0.22), transparent 55%),
+                  radial-gradient(800px 500px at 50% 90%, rgba(53,211,157,0.15), transparent 60%),
+                  var(--bg);
+      color:var(--text);
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+    .wrap{width:min(920px,100%);}
+    .card{
+      background:var(--card);
+      border:1px solid var(--card-border);
+      border-radius:var(--radius);
+      padding:22px;
+      box-shadow:var(--shadow);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:14px;
+      flex-wrap:wrap;
+    }
+    h1{margin:0 0 6px; font-size:20px;}
+    .sub{margin:0; color:var(--muted); font-size:13px; line-height:1.4;}
+    .nav{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .ghost{
+      border:1px solid rgba(255,255,255,0.18);
+      background:rgba(255,255,255,0.05);
+      color:var(--text);
+      border-radius:14px;
+      padding:10px 12px;
+      cursor:pointer;
+      font-weight:700;
+      transition: background 140ms ease, transform 140ms ease;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .ghost:hover{background:rgba(255,255,255,0.08); transform:translateY(-1px);}
+
+    .controls{
+      margin-top:10px;
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    select{
+      background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:14px;
+      padding:10px 12px;
+      color:var(--text);
+      outline:none;
+      font-size:14px;
+      min-width:260px;
+    }
+    .grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+    }
+    @media (max-width: 860px){ .grid{grid-template-columns: 1fr 1fr;} }
+    @media (max-width: 560px){ .grid{grid-template-columns: 1fr;} }
+
+    .lot{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+      padding:14px;
+    }
+    .lot h3{margin:0; font-size:14px;}
+    .lot p{margin:6px 0 0; color:rgba(231,238,252,0.7); font-size:12px; line-height:1.35;}
+    .status{
+      margin-top:10px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:7px 10px;
+      border-radius:999px;
+      font-size:12px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:50%;
+      background:var(--open);
+    }
+    .closed .dot{ background: var(--closed); }
+    .note{
+      margin-top:12px;
+      color:rgba(231,238,252,0.55);
+      font-size:12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="top">
+        <div>
+          <h1>View Parking Lots</h1>
+          <p class="sub">
+            View-only mode: you can switch between areas and see which parking lots are open/closed.
+          </p>
+        </div>
+        <div class="nav">
+          <a class="ghost" href="dashboard.html">Back to Dashboard</a>
+          <a class="ghost" href="manage-spot.html">Manage Spot</a>
+        </div>
+      </div>
+
+      <div class="controls">
+        <label style="color:rgba(231,238,252,0.7); font-size:13px;">Select Area:</label>
+        <select id="areaSelect">
+          <option value="All">All Areas</option>
+          <option value="Academic Buildings">Academic Buildings</option>
+          <option value="Student Services">Student Services</option>
+          <option value="Athletics">Athletics</option>
+        </select>
+      </div>
+
+      <div class="grid" id="lotsGrid"></div>
+
+      <div class="note">
+        Note: Status is demo data. This page does not allow booking or changes.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Protect page if not logged in
+    function getSession() {
+      try { return JSON.parse(localStorage.getItem("demo_session")); }
+      catch { return null; }
+    }
+    const session = getSession();
+    if (!session || !session.email) {
+      window.location.href = "index.html";
+    }
+
+    const lots = [
+      { name: "Nasso Family Science Centre", area: "Academic Buildings", status: "Open", info: "Near science labs and classrooms." },
+      { name: "Mulroney", area: "Academic Buildings", status: "Open", info: "Central campus access." },
+      { name: "Bloomfield", area: "Student Services", status: "Closed", info: "High demand area. Temporarily closed." },
+      { name: "Bruce Brown", area: "Athletics", status: "Open", info: "Convenient for recreation and sports facilities." },
+      { name: "Keating Centre", area: "Athletics", status: "Closed", info: "Maintenance in progress (demo status)." }
+    ];
+
+    const grid = document.getElementById("lotsGrid");
+    const areaSelect = document.getElementById("areaSelect");
+
+    function render(selectedArea) {
+      grid.innerHTML = "";
+
+      const filtered = selectedArea === "All"
+        ? lots
+        : lots.filter(l => l.area === selectedArea);
+
+      filtered.forEach(lot => {
+        const div = document.createElement("div");
+        div.className = "lot" + (lot.status === "Closed" ? " closed" : "");
+        div.innerHTML = `
+          <h3>${lot.name}</h3>
+          <p>Area: ${lot.area}</p>
+          <p>${lot.info}</p>
+          <div class="status">
+            <span class="dot"></span>
+            <span>${lot.status}</span>
+          </div>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    areaSelect.addEventListener("change", () => render(areaSelect.value));
+    render("All");
+  </script>
+</body>
+</html>
